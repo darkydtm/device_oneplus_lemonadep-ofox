@@ -118,6 +118,7 @@ jobs:
         shell: bash
         run: |
           git clone --depth=1 "${FOX_SYNC_URL}" orangefox-sync
+          rsync -a --delete orangefox-sync/patches/ patches/
           bash orangefox-sync/orangefox_sync.sh --branch "${SYNC_BRANCH}" --path "${GITHUB_WORKSPACE}/fox-r12"
 
       - name: Place device trees
