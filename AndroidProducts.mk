@@ -8,6 +8,6 @@ PRODUCT_MAKEFILES := \
     $(LOCAL_DIR)/twrp_lemonadep.mk
 
 COMMON_LUNCH_CHOICES := \
-    twrp_lemonadep-trunk_staging-user \
-    twrp_lemonadep-trunk_staging-userdebug \
-    twrp_lemonadep-trunk_staging-eng
+    twrp_lemonadep-ap2a-user \
+    twrp_lemonadep-ap2a-userdebug \
+    twrp_lemonadep-ap2a-eng

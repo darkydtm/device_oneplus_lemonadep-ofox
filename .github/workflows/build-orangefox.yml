@@ -37,7 +37,7 @@ concurrency:
 
 env:
   DEVICE: lemonadep
-  TARGET_RELEASE: trunk_staging
+  TARGET_RELEASE: ap2a
   OEM: oneplus
   FOX_SYNC_URL: https://gitlab.com/OrangeFox/sync.git
   DEFAULT_SYNC_BRANCH: "14.1"
