@@ -37,6 +37,7 @@ concurrency:
 
 env:
   DEVICE: lemonadep
+  TARGET_RELEASE: trunk_staging
   OEM: oneplus
   FOX_SYNC_URL: https://gitlab.com/OrangeFox/sync.git
   DEFAULT_SYNC_BRANCH: "14.1"
@@ -134,7 +135,7 @@ jobs:
         run: |
           cd fox-r12
           source build/envsetup.sh
-          lunch "twrp_${DEVICE}-eng"
+          lunch "twrp_${DEVICE}-${TARGET_RELEASE}-eng"
           mka -j"${J_VAL}" "${BUILD_TARGET}" 2>&1 | tee "${GITHUB_WORKSPACE}/orangefox-build.log"
 
       - name: Collect artifacts

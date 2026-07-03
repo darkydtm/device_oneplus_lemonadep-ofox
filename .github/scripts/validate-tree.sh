@@ -20,6 +20,7 @@ require_file "recovery/root/system/etc/recovery.fstab"
 require_file "recovery/root/system/etc/twrp.flags"
 
 grep -R "twrp_lemonadep" "${root}/AndroidProducts.mk" "${root}/twrp_lemonadep.mk" >/dev/null
+grep -R "twrp_lemonadep-trunk_staging-eng" "${root}/AndroidProducts.mk" >/dev/null
 grep -R "TW_INCLUDE_FBE_METADATA_DECRYPT := true" "${root}/device.mk" >/dev/null
 grep -R "vendor_dlkm.*erofs" "${root}/recovery/root/system/etc/recovery.fstab" >/dev/null
 
