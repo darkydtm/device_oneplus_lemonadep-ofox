@@ -1,0 +1,110 @@
+name: Check OrangeFox Product
+
+on:
+  workflow_dispatch:
+    inputs:
+      sync_branch:
+        description: OrangeFox sync branch
+        required: true
+        default: "14.1"
+      target_release:
+        description: Android release config
+        required: true
+        default: ap2a
+      common_branch:
+        description: sm8350-common branch
+        required: true
+        default: feat/r12-android-15-16
+
+concurrency:
+  group: orangefox-product-check-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVICE: lemonadep
+  OEM: oneplus
+  FOX_SYNC_URL: https://gitlab.com/OrangeFox/sync.git
+  SM8350_REPOSITORY_URL: https://github.com/darkydtm/device_oneplus_sm8350-common-ofox.git
+  LC_ALL: C
+  ALLOW_MISSING_DEPENDENCIES: "true"
+  FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER: "1"
+
+jobs:
+  product-check:
+    name: Product check
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sushrut1101/docker:arch
+    timeout-minutes: 90
+    env:
+      SYNC_BRANCH: ${{ github.event.inputs.sync_branch || '14.1' }}
+      TARGET_RELEASE: ${{ github.event.inputs.target_release || 'ap2a' }}
+      SM8350_BRANCH: ${{ github.event.inputs.common_branch || 'feat/r12-android-15-16' }}
+    steps:
+      - name: Checkout lemonadep
+        uses: actions/checkout@v4
+        with:
+          path: trees/lemonadep
+
+      - name: Checkout sm8350-common
+        run: |
+          git clone --depth=1 --branch "${SM8350_BRANCH}" "${SM8350_REPOSITORY_URL}" trees/sm8350-common
+
+      - name: Prepare disk
+        shell: bash
+        run: |
+          rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-}" || true
+          df -h
+
+      - name: Sync OrangeFox R12
+        shell: bash
+        run: |
+          git clone --depth=1 "${FOX_SYNC_URL}" orangefox-sync
+          rsync -a --delete orangefox-sync/patches/ patches/
+          bash orangefox-sync/orangefox_sync.sh --branch "${SYNC_BRANCH}" --path "${GITHUB_WORKSPACE}/fox-r12"
+
+      - name: Place device trees
+        shell: bash
+        run: |
+          mkdir -p fox-r12/device/oneplus
+          rm -rf fox-r12/device/oneplus/lemonadep fox-r12/device/oneplus/sm8350-common
+          rsync -a --delete --exclude=.git trees/lemonadep/ fox-r12/device/oneplus/lemonadep/
+          rsync -a --delete --exclude=.git trees/sm8350-common/ fox-r12/device/oneplus/sm8350-common/
+
+      - name: Check product configuration
+        shell: bash
+        run: |
+          {
+            cd fox-r12
+            source build/envsetup.sh
+            lunch "twrp_${DEVICE}-${TARGET_RELEASE}-eng"
+            target_product="$(get_build_var TARGET_PRODUCT)"
+            target_device="$(get_build_var TARGET_DEVICE)"
+            recovery_fstab="$(get_build_var TARGET_RECOVERY_FSTAB)"
+            vendorboot_ramdisk="$(get_build_var BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT)"
+            move_resources="$(get_build_var BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT)"
+            vendor_modules="$(get_build_var BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD)"
+            product_out="$(get_build_var PRODUCT_OUT)"
+            printf 'TARGET_PRODUCT=%s\n' "${target_product}"
+            printf 'TARGET_DEVICE=%s\n' "${target_device}"
+            printf 'TARGET_RELEASE=%s\n' "${TARGET_RELEASE}"
+            printf 'PRODUCT_OUT=%s\n' "${product_out}"
+            printf 'TARGET_RECOVERY_FSTAB=%s\n' "${recovery_fstab}"
+            printf 'BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT=%s\n' "${vendorboot_ramdisk}"
+            printf 'BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT=%s\n' "${move_resources}"
+            printf 'BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD=%s\n' "${vendor_modules}"
+            test "${target_product}" = "twrp_${DEVICE}"
+            test "${target_device}" = "${DEVICE}"
+            test "${vendorboot_ramdisk}" = "true"
+            test "${move_resources}" = "true"
+            test -n "${recovery_fstab}"
+            test -n "${vendor_modules}"
+          } 2>&1 | tee "${GITHUB_WORKSPACE}/orangefox-product-check.log"
+
+      - name: Upload check log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orangefox-product-check-${{ env.DEVICE }}-${{ github.run_number }}
+          path: orangefox-product-check.log
+          if-no-files-found: warn
