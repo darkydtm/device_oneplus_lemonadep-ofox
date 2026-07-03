@@ -1,0 +1,170 @@
+name: Build OrangeFox R12
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Build target
+        required: true
+        default: vendorbootimage
+        type: choice
+        options:
+          - vendorbootimage
+          - bootimage
+          - recoveryimage
+      sync_branch:
+        description: OrangeFox sync branch
+        required: true
+        default: "14.1"
+      jobs:
+        description: Parallel build jobs
+        required: true
+        default: "8"
+      maintainer:
+        description: OrangeFox maintainer name
+        required: false
+        default: darkydtm
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+concurrency:
+  group: orangefox-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVICE: lemonadep
+  OEM: oneplus
+  FOX_SYNC_URL: https://gitlab.com/OrangeFox/sync.git
+  DEFAULT_SYNC_BRANCH: "14.1"
+  DEFAULT_TARGET: vendorbootimage
+  SM8350_REPOSITORY_URL: https://github.com/darkydtm/device_oneplus_sm8350-common-ofox.git
+  SM8350_BRANCH: feat/r12-android-15-16
+
+jobs:
+  static-checks:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout lemonadep
+        uses: actions/checkout@v4
+        with:
+          path: lemonadep
+
+      - name: Checkout sm8350-common
+        run: |
+          git clone --depth=1 --branch "${SM8350_BRANCH}" "${SM8350_REPOSITORY_URL}" sm8350-common
+
+      - name: Install static check tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-utils
+
+      - name: Validate lemonadep tree
+        run: bash lemonadep/.github/scripts/validate-tree.sh lemonadep
+
+      - name: Validate sm8350 XML
+        run: |
+          xmllint --noout sm8350-common/vintf/manifest.xml sm8350-common/vintf/manifest_odm.xml
+
+      - name: Check committed whitespace
+        run: |
+          git -C lemonadep diff --check HEAD
+          git -C sm8350-common diff --check HEAD
+
+  build:
+    name: Build ${{ github.event.inputs.target || 'vendorbootimage' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sushrut1101/docker:arch
+    timeout-minutes: 360
+    env:
+      SYNC_BRANCH: ${{ github.event.inputs.sync_branch || '14.1' }}
+      BUILD_TARGET: ${{ github.event.inputs.target || 'vendorbootimage' }}
+      J_VAL: ${{ github.event.inputs.jobs || '8' }}
+      OF_MAINTAINER: ${{ github.event.inputs.maintainer || 'darkydtm' }}
+      FOX_BUILD_TYPE: Unofficial
+      ALLOW_MISSING_DEPENDENCIES: "true"
+      FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER: "1"
+      LC_ALL: C
+    steps:
+      - name: Checkout lemonadep
+        uses: actions/checkout@v4
+        with:
+          path: trees/lemonadep
+
+      - name: Checkout sm8350-common
+        run: |
+          git clone --depth=1 --branch "${SM8350_BRANCH}" "${SM8350_REPOSITORY_URL}" trees/sm8350-common
+
+      - name: Prepare disk
+        shell: bash
+        run: |
+          rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-}" || true
+          df -h
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ github.ref_name }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
+
+      - name: Sync OrangeFox R12
+        shell: bash
+        run: |
+          git clone --depth=1 "${FOX_SYNC_URL}" orangefox-sync
+          bash orangefox-sync/orangefox_sync.sh --branch "${SYNC_BRANCH}" --path "${GITHUB_WORKSPACE}/fox-r12"
+
+      - name: Place device trees
+        shell: bash
+        run: |
+          mkdir -p fox-r12/device/oneplus
+          rm -rf fox-r12/device/oneplus/lemonadep fox-r12/device/oneplus/sm8350-common
+          rsync -a --delete --exclude=.git trees/lemonadep/ fox-r12/device/oneplus/lemonadep/
+          rsync -a --delete --exclude=.git trees/sm8350-common/ fox-r12/device/oneplus/sm8350-common/
+
+      - name: Build OrangeFox
+        shell: bash
+        run: |
+          cd fox-r12
+          source build/envsetup.sh
+          lunch "twrp_${DEVICE}-eng"
+          mka -j"${J_VAL}" "${BUILD_TARGET}" 2>&1 | tee "${GITHUB_WORKSPACE}/orangefox-build.log"
+
+      - name: Collect artifacts
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          product="fox-r12/out/target/product/${DEVICE}"
+          find "${product}" -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -exec cp -a {} artifacts/ \; || true
+          cp -a orangefox-build.log artifacts/ 2>/dev/null || true
+          test -n "$(find artifacts -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -quit)"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orangefox-${{ env.DEVICE }}-${{ github.run_number }}
+          path: artifacts/
+          if-no-files-found: error
+
+  summary:
+    name: Result summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - static-checks
+      - build
+    steps:
+      - name: Check job results
+        run: |
+          echo "static-checks=${{ needs.static-checks.result }}"
+          echo "build=${{ needs.build.result }}"
+          test "${{ needs.static-checks.result }}" = "success"
+          test "${{ needs.build.result }}" = "success"
