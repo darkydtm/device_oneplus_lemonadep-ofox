@@ -151,9 +151,26 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifacts
+          mkdir -p artifacts/diagnostics
           product="fox-r12/out/target/product/${DEVICE}"
           find "${product}" -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -exec cp -a {} artifacts/ \; || true
           cp -a orangefox-build.log artifacts/ 2>/dev/null || true
+          for file in \
+            fox-r12/out/error.log \
+            fox-r12/out/verbose.log \
+            fox-r12/out/soong.log \
+            fox-r12/out/.module_paths/Android.bp.list; do
+            [[ -f "${file}" ]] && cp --parents -a "${file}" artifacts/diagnostics/
+          done
+          if [[ -d fox-r12/out/soong ]]; then
+            find fox-r12/out/soong -maxdepth 2 -type f \( \
+              -name "*.log" -o \
+              -name "*.err" -o \
+              -name "*.trace" -o \
+              -name "*.variables" -o \
+              -name "soong.environment.*" \
+            \) -exec cp --parents -a {} artifacts/diagnostics/ \;
+          fi
           test -n "$(find artifacts -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -quit)"
 
       - name: Upload artifacts
