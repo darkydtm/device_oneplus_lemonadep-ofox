@@ -23,7 +23,7 @@ on:
       jobs:
         description: Parallel build jobs
         required: true
-        default: "8"
+        default: "4"
       maintainer:
         description: OrangeFox maintainer name
         required: false
@@ -88,7 +88,7 @@ jobs:
     env:
       SYNC_BRANCH: ${{ github.event.inputs.sync_branch || '14.1' }}
       BUILD_TARGET: ${{ github.event.inputs.target || 'vendorbootimage' }}
-      J_VAL: ${{ github.event.inputs.jobs || '8' }}
+      J_VAL: ${{ github.event.inputs.jobs || '4' }}
       OF_MAINTAINER: ${{ github.event.inputs.maintainer || 'darkydtm' }}
       FOX_BUILD_TYPE: Unofficial
       ALLOW_MISSING_DEPENDENCIES: "true"
@@ -121,6 +121,7 @@ jobs:
             /usr/local/share/powershell \
             "${AGENT_TOOLSDIRECTORY:-}" || true
           docker system prune -af || true
+          free -h
           df -h
 
       - name: Sync OrangeFox R12
@@ -154,6 +155,7 @@ jobs:
         run: |
           bash trees/lemonadep/.github/scripts/run-orangefox-container.sh '
             df -h
+            free -h
             du -sh fox-r12 fox-r12/out trees 2>/dev/null || true
             cd fox-r12
             source build/envsetup.sh
@@ -170,8 +172,10 @@ jobs:
           printf "run=%s\nsha=%s\n" "${GITHUB_RUN_ID}" "${GITHUB_SHA}" > artifacts/diagnostics/ci-context.txt
           {
             df -h
+            free -h
             du -sh fox-r12 fox-r12/out trees artifacts 2>/dev/null || true
           } > artifacts/diagnostics/disk-usage.txt
+          sudo dmesg -T | tail -200 > artifacts/diagnostics/dmesg-tail.txt 2>/dev/null || true
           product="fox-r12/out/target/product/${DEVICE}"
           {
             echo "product=${product}"
