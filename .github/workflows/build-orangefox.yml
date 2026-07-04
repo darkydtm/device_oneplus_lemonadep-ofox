@@ -83,6 +83,7 @@ jobs:
 
   build:
     name: Build ${{ github.event.inputs.target || 'vendorbootimage' }}
+    needs: static-checks
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
@@ -159,6 +160,7 @@ jobs:
           '
 
       - name: Build OrangeFox
+        id: build-orangefox
         shell: bash
         run: |
           bash trees/lemonadep/.github/scripts/run-orangefox-container.sh '
@@ -186,6 +188,8 @@ jobs:
       - name: Collect artifacts
         if: always()
         shell: bash
+        env:
+          BUILD_STEP_OUTCOME: ${{ steps.build-orangefox.outcome }}
         run: |
           mkdir -p artifacts
           mkdir -p artifacts/diagnostics
@@ -221,7 +225,11 @@ jobs:
               -name "soong.environment.*" \
             \) -exec cp --parents -a --no-preserve=ownership {} artifacts/diagnostics/ \;
           fi
-          test -n "$(find artifacts -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -quit)"
+          if [[ "${BUILD_STEP_OUTCOME}" == "success" ]]; then
+            test -n "$(find artifacts -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -quit)"
+          else
+            echo "Skipping final image assertion because Build OrangeFox finished with ${BUILD_STEP_OUTCOME}"
+          fi
 
       - name: Fix artifact permissions
         if: always()
