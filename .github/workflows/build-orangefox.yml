@@ -111,10 +111,14 @@ jobs:
         shell: bash
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-}" || true
-          sudo fallocate -l 8G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          swapfile="${RUNNER_TEMP:-/tmp}/orangefox-swapfile"
+          if ! sudo swapon --show=NAME | grep -Fxq "${swapfile}"; then
+            sudo rm -f "${swapfile}"
+            sudo fallocate -l 8G "${swapfile}" || sudo dd if=/dev/zero of="${swapfile}" bs=1M count=8192
+            sudo chmod 600 "${swapfile}"
+            sudo mkswap "${swapfile}"
+            sudo swapon "${swapfile}"
+          fi
           free -h
           df -h
 
@@ -166,6 +170,7 @@ jobs:
         run: |
           mkdir -p artifacts
           mkdir -p artifacts/diagnostics
+          printf "run=%s\nsha=%s\n" "${GITHUB_RUN_ID}" "${GITHUB_SHA}" > artifacts/diagnostics/ci-context.txt
           product="fox-r12/out/target/product/${DEVICE}"
           find "${product}" -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -exec cp -a {} artifacts/ \; || true
           cp -a orangefox-build.log artifacts/ 2>/dev/null || true
