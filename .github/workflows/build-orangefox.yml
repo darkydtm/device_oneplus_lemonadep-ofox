@@ -126,6 +126,10 @@ jobs:
           rsync -a --delete orangefox-sync/patches/ patches/
           bash orangefox-sync/orangefox_sync.sh --branch "${SYNC_BRANCH}" --path "${GITHUB_WORKSPACE}/fox-r12"
 
+      - name: Patch OrangeFox tree
+        shell: bash
+        run: bash trees/lemonadep/.github/scripts/patch-orangefox-tree.sh fox-r12
+
       - name: Place device trees
         shell: bash
         run: |
