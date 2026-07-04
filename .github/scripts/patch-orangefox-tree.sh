@@ -23,8 +23,21 @@ fi
 
 echo "Patching ${config_file}"
 
-if ! grep -Eq "^BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST[[:space:]]*.*(^|[[:space:]])${bad_optional_uses_lib_module}($|[[:space:]])" "${config_file}"; then
-	printf '\nBUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST += %s\n' "${bad_optional_uses_lib_module}" >> "${config_file}"
+if ! grep -Eq "^BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST[[:space:]]*[:+]?=.*(^|[[:space:]])${bad_optional_uses_lib_module}($|[[:space:]])" "${config_file}"; then
+	if grep -Eq "^BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST[[:space:]]*[:+]?=" "${config_file}"; then
+		sed -i -E "0,/^(BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST[[:space:]]*[:+]?=.*)$/s//\\1 ${bad_optional_uses_lib_module}/" "${config_file}"
+	else
+		tmp_file="$(mktemp)"
+		awk -v module="${bad_optional_uses_lib_module}" '
+			$0 == "include $(BUILD_SYSTEM)/soong_config.mk" && !inserted {
+				print "BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST += " module
+				inserted = 1
+			}
+			{ print }
+			END { exit inserted ? 0 : 1 }
+		' "${config_file}" > "${tmp_file}"
+		mv "${tmp_file}" "${config_file}"
+	fi
 fi
 
 grep -n "BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST" "${config_file}"
