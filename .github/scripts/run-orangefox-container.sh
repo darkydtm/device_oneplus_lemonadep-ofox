@@ -5,6 +5,7 @@ command="${1:?command is required}"
 workspace="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
 image="${ORANGEFOX_CONTAINER_IMAGE:-ghcr.io/sushrut1101/docker:arch}"
 home_dir="${ORANGEFOX_CONTAINER_HOME:-/tmp/orangefox-home}"
+container_command=$'mkdir -p "${HOME}"\n'"${command}"
 
 docker run --rm \
 	--volume "${workspace}:${workspace}" \
@@ -31,4 +32,4 @@ docker run --rm \
 	--env CCACHE_DIR \
 	--env CCACHE_SIZE \
 	"${image}" \
-	bash -lc "${command}"
+	bash -lc "${container_command}"
