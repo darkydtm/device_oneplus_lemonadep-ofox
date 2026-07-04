@@ -78,8 +78,8 @@ jobs:
 
       - name: Check committed whitespace
         run: |
-          git -C lemonadep diff --check HEAD
-          git -C sm8350-common diff --check HEAD
+          git -C lemonadep show --check --format= --no-ext-diff HEAD
+          git -C sm8350-common show --check --format= --no-ext-diff HEAD
 
   build:
     name: Build ${{ github.event.inputs.target || 'vendorbootimage' }}
