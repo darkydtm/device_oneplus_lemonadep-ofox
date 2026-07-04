@@ -2,7 +2,7 @@
 set -euo pipefail
 
 tree_root="${1:?tree root is required}"
-missing_lib="androidx.camera.extensions.impl"
+bad_optional_uses_lib_module="CameraExtensionsProxy"
 config_file=""
 
 for candidate in "${tree_root}/build/make/core/config.mk" "${tree_root}/build/core/config.mk"; do
@@ -23,8 +23,8 @@ fi
 
 echo "Patching ${config_file}"
 
-if ! grep -Fq "${missing_lib}" "${config_file}"; then
-	printf '\nINTERNAL_PLATFORM_MISSING_USES_LIBRARIES += %s\n' "${missing_lib}" >> "${config_file}"
+if ! grep -Eq "^BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST[[:space:]]*.*(^|[[:space:]])${bad_optional_uses_lib_module}($|[[:space:]])" "${config_file}"; then
+	printf '\nBUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST += %s\n' "${bad_optional_uses_lib_module}" >> "${config_file}"
 fi
 
-grep -n "INTERNAL_PLATFORM_MISSING_USES_LIBRARIES\\|${missing_lib}" "${config_file}"
+grep -n "BUILD_WARNING_BAD_OPTIONAL_USES_LIBS_ALLOWLIST" "${config_file}"
