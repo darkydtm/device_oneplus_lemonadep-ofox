@@ -23,6 +23,7 @@ grep -R "twrp_lemonadep" "${root}/AndroidProducts.mk" "${root}/twrp_lemonadep.mk
 grep -R "twrp_lemonadep-ap2a-eng" "${root}/AndroidProducts.mk" >/dev/null
 grep -R "TW_INCLUDE_FBE_METADATA_DECRYPT := true" "${root}/device.mk" >/dev/null
 grep -R "vendor_dlkm.*erofs" "${root}/recovery/root/system/etc/recovery.fstab" >/dev/null
+find "${root}/.github/scripts" -name "*.sh" -print0 | xargs -0 -r bash -n
 
 if command -v xmllint >/dev/null 2>&1; then
 	find "${root}" -path "*/vintf/*.xml" -print0 | xargs -0 -r xmllint --noout

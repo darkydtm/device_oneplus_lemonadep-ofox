@@ -46,6 +46,7 @@ env:
   FOX_SYNC_URL: https://gitlab.com/OrangeFox/sync.git
   DEFAULT_SYNC_BRANCH: "14.1"
   DEFAULT_TARGET: vendorbootimage
+  ORANGEFOX_CONTAINER_IMAGE: ghcr.io/sushrut1101/docker:arch
   SM8350_REPOSITORY_URL: https://github.com/darkydtm/device_oneplus_sm8350-common-ofox.git
   SM8350_BRANCH: feat/r12-android-15-16
 
@@ -83,8 +84,6 @@ jobs:
   build:
     name: Build ${{ github.event.inputs.target || 'vendorbootimage' }}
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/sushrut1101/docker:arch
     timeout-minutes: 360
     env:
       SYNC_BRANCH: ${{ github.event.inputs.sync_branch || '14.1' }}
@@ -95,6 +94,9 @@ jobs:
       ALLOW_MISSING_DEPENDENCIES: "true"
       FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER: "1"
       LC_ALL: C
+      USE_CCACHE: "1"
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_SIZE: 30G
     steps:
       - name: Checkout lemonadep
         uses: actions/checkout@v4
@@ -108,7 +110,12 @@ jobs:
       - name: Prepare disk
         shell: bash
         run: |
-          rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-}" || true
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-}" || true
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
           df -h
 
       - name: Restore ccache
@@ -122,29 +129,36 @@ jobs:
       - name: Sync OrangeFox R12
         shell: bash
         run: |
-          git clone --depth=1 "${FOX_SYNC_URL}" orangefox-sync
-          rsync -a --delete orangefox-sync/patches/ patches/
-          bash orangefox-sync/orangefox_sync.sh --branch "${SYNC_BRANCH}" --path "${GITHUB_WORKSPACE}/fox-r12"
+          bash trees/lemonadep/.github/scripts/run-orangefox-container.sh '
+            git clone --depth=1 "${FOX_SYNC_URL}" orangefox-sync
+            rsync -a --delete orangefox-sync/patches/ patches/
+            bash orangefox-sync/orangefox_sync.sh --branch "${SYNC_BRANCH}" --path "${GITHUB_WORKSPACE}/fox-r12"
+          '
 
       - name: Patch OrangeFox tree
         shell: bash
-        run: bash trees/lemonadep/.github/scripts/patch-orangefox-tree.sh fox-r12
+        run: bash trees/lemonadep/.github/scripts/run-orangefox-container.sh 'bash trees/lemonadep/.github/scripts/patch-orangefox-tree.sh fox-r12'
 
       - name: Place device trees
         shell: bash
         run: |
-          mkdir -p fox-r12/device/oneplus
-          rm -rf fox-r12/device/oneplus/lemonadep fox-r12/device/oneplus/sm8350-common
-          rsync -a --delete --exclude=.git trees/lemonadep/ fox-r12/device/oneplus/lemonadep/
-          rsync -a --delete --exclude=.git trees/sm8350-common/ fox-r12/device/oneplus/sm8350-common/
+          bash trees/lemonadep/.github/scripts/run-orangefox-container.sh '
+            mkdir -p fox-r12/device/oneplus
+            rm -rf fox-r12/device/oneplus/lemonadep fox-r12/device/oneplus/sm8350-common
+            rsync -a --delete --exclude=.git trees/lemonadep/ fox-r12/device/oneplus/lemonadep/
+            rsync -a --delete --exclude=.git trees/sm8350-common/ fox-r12/device/oneplus/sm8350-common/
+          '
 
       - name: Build OrangeFox
         shell: bash
         run: |
-          cd fox-r12
-          source build/envsetup.sh
-          lunch "twrp_${DEVICE}-${TARGET_RELEASE}-eng"
-          mka -j"${J_VAL}" "${BUILD_TARGET}" 2>&1 | tee "${GITHUB_WORKSPACE}/orangefox-build.log"
+          bash trees/lemonadep/.github/scripts/run-orangefox-container.sh '
+            ccache -M "${CCACHE_SIZE}" || true
+            cd fox-r12
+            source build/envsetup.sh
+            lunch "twrp_${DEVICE}-${TARGET_RELEASE}-eng"
+            mka -j"${J_VAL}" "${BUILD_TARGET}" 2>&1 | tee "${GITHUB_WORKSPACE}/orangefox-build.log"
+          '
 
       - name: Collect artifacts
         if: always()
