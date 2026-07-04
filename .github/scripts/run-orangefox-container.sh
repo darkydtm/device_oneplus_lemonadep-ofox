@@ -9,7 +9,6 @@ home_dir="${workspace}/.container-home"
 mkdir -p "${home_dir}"
 
 docker run --rm \
-	--user "$(id -u):$(id -g)" \
 	--volume "${workspace}:${workspace}" \
 	--workdir "${workspace}" \
 	--env HOME="${home_dir}" \
