@@ -94,9 +94,9 @@ jobs:
       ALLOW_MISSING_DEPENDENCIES: "true"
       FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER: "1"
       LC_ALL: C
-      USE_CCACHE: "1"
+      USE_CCACHE: "0"
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_SIZE: 30G
+      CCACHE_SIZE: 0
     steps:
       - name: Checkout lemonadep
         uses: actions/checkout@v4
@@ -110,25 +110,18 @@ jobs:
       - name: Prepare disk
         shell: bash
         run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-}" || true
-          swapfile="${RUNNER_TEMP:-/tmp}/orangefox-swapfile"
-          if ! sudo swapon --show=NAME | grep -Fxq "${swapfile}"; then
-            sudo rm -f "${swapfile}"
-            sudo fallocate -l 8G "${swapfile}" || sudo dd if=/dev/zero of="${swapfile}" bs=1M count=8192
-            sudo chmod 600 "${swapfile}"
-            sudo mkswap "${swapfile}"
-            sudo swapon "${swapfile}"
-          fi
-          free -h
           df -h
-
-      - name: Restore ccache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: ccache-${{ runner.os }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-${{ runner.os }}-
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /usr/local/share/boost \
+            /usr/local/lib/android \
+            /usr/share/swift \
+            /usr/local/.ghcup \
+            /usr/local/share/powershell \
+            "${AGENT_TOOLSDIRECTORY:-}" || true
+          docker system prune -af || true
+          df -h
 
       - name: Sync OrangeFox R12
         shell: bash
@@ -137,6 +130,9 @@ jobs:
             git clone --depth=1 "${FOX_SYNC_URL}" orangefox-sync
             rsync -a --delete orangefox-sync/patches/ patches/
             bash orangefox-sync/orangefox_sync.sh --branch "${SYNC_BRANCH}" --path "${GITHUB_WORKSPACE}/fox-r12"
+            rm -rf orangefox-sync patches
+            df -h
+            du -sh fox-r12 trees 2>/dev/null || true
           '
 
       - name: Patch OrangeFox tree
@@ -157,7 +153,8 @@ jobs:
         shell: bash
         run: |
           bash trees/lemonadep/.github/scripts/run-orangefox-container.sh '
-            ccache -M "${CCACHE_SIZE}" || true
+            df -h
+            du -sh fox-r12 fox-r12/out trees 2>/dev/null || true
             cd fox-r12
             source build/envsetup.sh
             lunch "twrp_${DEVICE}-${TARGET_RELEASE}-eng"
@@ -171,6 +168,10 @@ jobs:
           mkdir -p artifacts
           mkdir -p artifacts/diagnostics
           printf "run=%s\nsha=%s\n" "${GITHUB_RUN_ID}" "${GITHUB_SHA}" > artifacts/diagnostics/ci-context.txt
+          {
+            df -h
+            du -sh fox-r12 fox-r12/out trees artifacts 2>/dev/null || true
+          } > artifacts/diagnostics/disk-usage.txt
           product="fox-r12/out/target/product/${DEVICE}"
           {
             echo "product=${product}"
@@ -198,11 +199,11 @@ jobs:
           fi
           test -n "$(find artifacts -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -quit)"
 
-      - name: Fix cache permissions
+      - name: Fix artifact permissions
         if: always()
         shell: bash
         run: |
-          sudo chown -R "$(id -u):$(id -g)" .ccache artifacts 2>/dev/null || true
+          sudo chown -R "$(id -u):$(id -g)" artifacts 2>/dev/null || true
 
       - name: Upload artifacts
         if: always()
