@@ -172,7 +172,13 @@ jobs:
           mkdir -p artifacts/diagnostics
           printf "run=%s\nsha=%s\n" "${GITHUB_RUN_ID}" "${GITHUB_SHA}" > artifacts/diagnostics/ci-context.txt
           product="fox-r12/out/target/product/${DEVICE}"
-          find "${product}" -maxdepth 1 -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -exec cp -a --no-preserve=ownership {} artifacts/ \; || true
+          {
+            echo "product=${product}"
+            find "${product}" -maxdepth 4 -type f -printf "%p\n" 2>/dev/null || true
+            echo "out=${GITHUB_WORKSPACE}/fox-r12/out"
+            find fox-r12/out -maxdepth 4 -type f \( -name "*.img" -o -name "*.zip" -o -name "*.log" -o -name "*.txt" \) -printf "%p\n" 2>/dev/null || true
+          } > artifacts/diagnostics/output-files.txt
+          find "${product}" -type f \( -name "*.img" -o -name "OrangeFox*.zip" \) -print -exec cp -a --no-preserve=ownership {} artifacts/ \; || true
           cp -a --no-preserve=ownership orangefox-build.log artifacts/ 2>/dev/null || true
           for file in \
             fox-r12/out/error.log \
