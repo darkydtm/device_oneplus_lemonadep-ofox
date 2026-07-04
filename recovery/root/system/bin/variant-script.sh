@@ -63,5 +63,3 @@ case $project in
 esac
 
 exit 0
-
-
