@@ -79,6 +79,8 @@ jobs:
       - name: Validate sm8350 boot mode
         run: |
           grep -Eq "^BOARD_USES_RECOVERY_AS_BOOT[[:space:]]*:=[[:space:]]*true" sm8350-common/BoardConfigCommon.mk
+          ! grep -Eq "^BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT[[:space:]]*:=[[:space:]]*true" sm8350-common/BoardConfigCommon.mk
+          ! grep -Eq "^BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT[[:space:]]*:=[[:space:]]*true" sm8350-common/BoardConfigCommon.mk
           grep -Eq "^BOARD_BOOT_HEADER_VERSION[[:space:]]*:=[[:space:]]*4" sm8350-common/BoardConfigCommon.mk
 
       - name: Check committed whitespace
