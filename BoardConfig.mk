@@ -9,6 +9,8 @@ include device/oneplus/sm8350-common/BoardConfigCommon.mk
 
 DEVICE_PATH := device/oneplus/lemonadep
 
+TARGET_OTA_ASSERT_DEVICE := OnePlus9Pro,lemonadep
+
 # Properties
 TARGET_VENDOR_PROP += $(DEVICE_PATH)/vendor.prop
 

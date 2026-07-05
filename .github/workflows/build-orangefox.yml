@@ -6,11 +6,11 @@ on:
       target:
         description: Build target
         required: true
-        default: vendorbootimage
+        default: bootimage
         type: choice
         options:
-          - vendorbootimage
           - bootimage
+          - vendorbootimage
           - recoveryimage
       sync_branch:
         description: OrangeFox sync branch
@@ -45,7 +45,7 @@ env:
   OEM: oneplus
   FOX_SYNC_URL: https://gitlab.com/OrangeFox/sync.git
   DEFAULT_SYNC_BRANCH: "14.1"
-  DEFAULT_TARGET: vendorbootimage
+  DEFAULT_TARGET: bootimage
   ORANGEFOX_CONTAINER_IMAGE: ghcr.io/sushrut1101/docker:arch
   SM8350_REPOSITORY_URL: https://github.com/darkydtm/device_oneplus_sm8350-common-ofox.git
   SM8350_BRANCH: feat/r12-android-15-16
@@ -76,18 +76,23 @@ jobs:
         run: |
           xmllint --noout sm8350-common/vintf/manifest.xml sm8350-common/vintf/manifest_odm.xml
 
+      - name: Validate sm8350 boot mode
+        run: |
+          grep -Eq "^BOARD_USES_RECOVERY_AS_BOOT[[:space:]]*:=[[:space:]]*true" sm8350-common/BoardConfigCommon.mk
+          grep -Eq "^BOARD_BOOT_HEADER_VERSION[[:space:]]*:=[[:space:]]*4" sm8350-common/BoardConfigCommon.mk
+
       - name: Check committed whitespace
         run: |
           git -C lemonadep show --check --format= --no-ext-diff HEAD
           git -C sm8350-common show --check --format= --no-ext-diff HEAD
 
   build:
-    name: Build ${{ github.event.inputs.target || 'vendorbootimage' }}
+    name: Build ${{ github.event.inputs.target || 'bootimage' }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
       SYNC_BRANCH: ${{ github.event.inputs.sync_branch || '14.1' }}
-      BUILD_TARGET: ${{ github.event.inputs.target || 'vendorbootimage' }}
+      BUILD_TARGET: ${{ github.event.inputs.target || 'bootimage' }}
       J_VAL: ${{ github.event.inputs.jobs || '4' }}
       OF_MAINTAINER: ${{ github.event.inputs.maintainer || 'darkydtm' }}
       FOX_BUILD_TYPE: Unofficial
