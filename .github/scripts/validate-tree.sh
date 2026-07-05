@@ -37,7 +37,11 @@ require_grep "twrp_lemonadep-ap2a-eng" "AndroidProducts.mk" "AndroidProducts.mk 
 require_grep "TARGET_OTA_ASSERT_DEVICE[[:space:]]*:=[[:space:]]*OnePlus9Pro,lemonadep" "BoardConfig.mk" "BoardConfig.mk must assert OnePlus9Pro and lemonadep"
 require_grep "PRODUCT_DEVICE[[:space:]]*:=[[:space:]]*lemonadep" "twrp_lemonadep.mk" "twrp_lemonadep.mk must target lemonadep"
 require_grep "PRODUCT_SYSTEM_DEVICE[[:space:]]*:=[[:space:]]*OnePlus9Pro" "twrp_lemonadep.mk" "twrp_lemonadep.mk must expose OnePlus9Pro system device"
-require_grep "OF_TARGET_DEVICES[[:space:]]*:=[[:space:]]*OnePlus9Pro,lemonadep" "twrp_lemonadep.mk" "twrp_lemonadep.mk must expose OnePlus9Pro and lemonadep to OrangeFox"
+require_grep "FOX_TARGET_DEVICES[[:space:]]*:=[[:space:]]*OnePlus9Pro,lemonadep" "twrp_lemonadep.mk" "twrp_lemonadep.mk must expose OnePlus9Pro and lemonadep to OrangeFox"
+if grep -Eq "OF_TARGET_DEVICES[[:space:]]*:=" "${root}/twrp_lemonadep.mk"; then
+	echo "twrp_lemonadep.mk must not use obsolete OF_TARGET_DEVICES" >&2
+	exit 1
+fi
 require_grep "TW_INCLUDE_FBE_METADATA_DECRYPT[[:space:]]*:=[[:space:]]*true" "device.mk" "device.mk must enable FBE metadata decrypt"
 require_grep "PRODUCT_ENABLE_UFFD_GC[[:space:]]*:=[[:space:]]*true" "twrp_lemonadep.mk" "twrp_lemonadep.mk must explicitly enable UFFD GC"
 require_grep "vendor_dlkm.*erofs" "recovery/root/system/etc/recovery.fstab" "recovery.fstab must mount vendor_dlkm as erofs"
