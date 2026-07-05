@@ -42,10 +42,10 @@ on fs
     write /sys/class/backlight/panel0-backlight/brightness 200
 
     # Copy firmware and umount to enable flashing of modem in fastbootd
-    mkdir /mnt/firmware
-    mount vfat /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /mnt/firmware ro
-    exec u:r:recovery:s0 -- /system/bin/bash -c "if ! /system/bin/grep -Fq twrpfastboot /proc/cmdline; then cp -r /mnt/firmware/image/adsp.* /firmware/image ; fi"
-    umount /mnt/firmware
+    #mkdir /mnt/firmware
+    #mount vfat /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /mnt/firmware ro
+    #exec u:r:recovery:s0 -- /system/bin/bash -c "if ! /system/bin/grep -Fq twrpfastboot /proc/cmdline; then cp -r /mnt/firmware/image/adsp.* /firmware/image ; fi"
+    #umount /mnt/firmware
 
     # This must be under on fs, otherwise update_engine wont map the partitions and exit installation
     symlink /dev/block/bootdevice/by-name/oem_stanvbk /dev/block/bootdevice/by-name/oem_stanvbk_a
@@ -60,6 +60,7 @@ on fs
 on boot
     exec u:r:recovery:s0 -- /system/bin/variant-script.sh
     exec u:r:recovery:s0 -- /system/bin/set-timestamp.sh
+    exec u:r:recovery:s0 -- /system/bin/fix-invalid-vintf-manifest.sh
 
 on property:twrp.modules.loaded=true
     # Create a delay to prevent "deadlock," where services and libs are loaded from ROMs vendor partition,
