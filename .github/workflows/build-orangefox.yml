@@ -48,7 +48,7 @@ env:
   DEFAULT_TARGET: bootimage
   ORANGEFOX_CONTAINER_IMAGE: ghcr.io/sushrut1101/docker:arch
   SM8350_REPOSITORY_URL: https://github.com/darkydtm/device_oneplus_sm8350-common-ofox.git
-  SM8350_BRANCH: feat/r12-android-15-16
+  SM8350_BRANCH: fix/fastboot-boot-recovery
 
 jobs:
   static-checks:
