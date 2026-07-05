@@ -23,7 +23,7 @@ on:
       jobs:
         description: Parallel build jobs
         required: true
-        default: "4"
+        default: "2"
       maintainer:
         description: OrangeFox maintainer name
         required: false
@@ -95,7 +95,7 @@ jobs:
     env:
       SYNC_BRANCH: ${{ github.event.inputs.sync_branch || '14.1' }}
       BUILD_TARGET: ${{ github.event.inputs.target || 'bootimage' }}
-      J_VAL: ${{ github.event.inputs.jobs || '4' }}
+      J_VAL: ${{ github.event.inputs.jobs || '2' }}
       OF_MAINTAINER: ${{ github.event.inputs.maintainer || 'darkydtm' }}
       FOX_BUILD_TYPE: Unofficial
       ALLOW_MISSING_DEPENDENCIES: "true"
@@ -131,7 +131,7 @@ jobs:
           swapfile="${RUNNER_TEMP:-/tmp}/orangefox-swapfile"
           if ! sudo swapon --show=NAME | grep -Fxq "${swapfile}"; then
             sudo rm -f "${swapfile}"
-            sudo fallocate -l 8G "${swapfile}" || sudo dd if=/dev/zero of="${swapfile}" bs=1M count=8192
+            sudo fallocate -l 16G "${swapfile}" || sudo dd if=/dev/zero of="${swapfile}" bs=1M count=16384
             sudo chmod 600 "${swapfile}"
             sudo mkswap "${swapfile}"
             sudo swapon "${swapfile}"
