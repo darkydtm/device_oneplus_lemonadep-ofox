@@ -19,9 +19,6 @@ PRODUCT_SOONG_NAMESPACES += \
 # Inherit from the common OEM chipset makefile.
 $(call inherit-product, device/oneplus/sm8350-common/common.mk)
 
-# Kernel
-PRODUCT_ENABLE_UFFD_GC := true
-
 PRODUCT_PACKAGES += \
     qcom_decrypt \
     qcom_decrypt_fbe

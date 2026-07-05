@@ -34,7 +34,7 @@ require_grep "twrp_lemonadep" "AndroidProducts.mk" "AndroidProducts.mk must refe
 require_grep "twrp_lemonadep" "twrp_lemonadep.mk" "twrp_lemonadep.mk must define twrp_lemonadep"
 require_grep "twrp_lemonadep-ap2a-eng" "AndroidProducts.mk" "AndroidProducts.mk must expose twrp_lemonadep-ap2a-eng"
 require_grep "TW_INCLUDE_FBE_METADATA_DECRYPT[[:space:]]*:=[[:space:]]*true" "device.mk" "device.mk must enable FBE metadata decrypt"
-require_grep "PRODUCT_ENABLE_UFFD_GC[[:space:]]*:=[[:space:]]*true" "device.mk" "device.mk must explicitly enable UFFD GC"
+require_grep "PRODUCT_ENABLE_UFFD_GC[[:space:]]*:=[[:space:]]*true" "twrp_lemonadep.mk" "twrp_lemonadep.mk must explicitly enable UFFD GC"
 require_grep "vendor_dlkm.*erofs" "recovery/root/system/etc/recovery.fstab" "recovery.fstab must mount vendor_dlkm as erofs"
 find "${root}/.github/scripts" -name "*.sh" -print0 | xargs -0 -r bash -n
 

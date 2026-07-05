@@ -14,6 +14,8 @@ $(call inherit-product, device/oneplus/lemonadep/device.mk)
 # Inherit some common Lineage stuff.
 $(call inherit-product, vendor/twrp/config/common.mk)
 
+PRODUCT_ENABLE_UFFD_GC := true
+
 PRODUCT_NAME := twrp_lemonadep
 PRODUCT_DEVICE := lemonadep
 PRODUCT_MANUFACTURER := OnePlus
