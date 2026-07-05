@@ -18,6 +18,8 @@ docker run --rm \
 	--env FOX_SYNC_URL \
 	--env DEFAULT_SYNC_BRANCH \
 	--env DEFAULT_TARGET \
+	--env TARGET_DEVICE_ALT \
+	--env FOX_TARGET_DEVICES \
 	--env SM8350_REPOSITORY_URL \
 	--env SM8350_BRANCH \
 	--env SYNC_BRANCH \

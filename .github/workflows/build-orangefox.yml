@@ -49,6 +49,8 @@ env:
   ORANGEFOX_CONTAINER_IMAGE: ghcr.io/sushrut1101/docker:arch
   SM8350_REPOSITORY_URL: https://github.com/darkydtm/device_oneplus_sm8350-common-ofox.git
   SM8350_BRANCH: fix/fastboot-boot-recovery
+  TARGET_DEVICE_ALT: OnePlus9Pro
+  FOX_TARGET_DEVICES: OnePlus9Pro,lemonadep
 
 jobs:
   static-checks:
@@ -81,7 +83,8 @@ jobs:
           grep -Eq "^BOARD_USES_RECOVERY_AS_BOOT[[:space:]]*:=[[:space:]]*true" sm8350-common/BoardConfigCommon.mk
           ! grep -Eq "^BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT[[:space:]]*:=[[:space:]]*true" sm8350-common/BoardConfigCommon.mk
           ! grep -Eq "^BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT[[:space:]]*:=[[:space:]]*true" sm8350-common/BoardConfigCommon.mk
-          grep -Eq "^BOARD_BOOT_HEADER_VERSION[[:space:]]*:=[[:space:]]*4" sm8350-common/BoardConfigCommon.mk
+          grep -Eq "^BOARD_BOOT_HEADER_VERSION[[:space:]]*:=[[:space:]]*3" sm8350-common/BoardConfigCommon.mk
+          ! grep -Eq "^TARGET_RECOVERY_FSTAB[[:space:]]*:=" sm8350-common/BoardConfigCommon.mk
 
       - name: Check committed whitespace
         run: |
