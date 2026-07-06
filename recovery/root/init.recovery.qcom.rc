@@ -80,8 +80,8 @@ on property:twrp.modules.loaded=true
     start vendor.qti.vibrator
 
     # Load ADSP firmware for PMIC
-    wait /sys/kernel/boot_adsp/boot 1
+    wait /sys/kernel/boot_adsp/boot 5
     write /sys/kernel/boot_adsp/boot 1
-    wait /sys/class/power_supply/battery 1
+    wait /sys/class/power_supply/battery 5
     start health-hal-2-0
     start health-hal-2-1
