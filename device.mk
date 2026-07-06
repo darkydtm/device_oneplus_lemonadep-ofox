@@ -70,8 +70,6 @@ TW_MAX_BRIGHTNESS := 4095
 
 TW_SUPPORT_INPUT_AIDL_HAPTICS := true
 
-TW_LOAD_VENDOR_MODULES := "aw8697.ko adsp_loader_dlkm.ko oplus_chg.ko touchscreen.ko haptic.ko"
-
 #Properties
 TW_OVERRIDE_SYSTEM_PROPS := \
     "ro.build.fingerprint=ro.system.build.fingerprint;ro.build.version.incremental"
@@ -84,7 +82,11 @@ TARGET_RECOVERY_DEVICE_MODULES += libion \
     vendor.qti.hardware.vibrator.service.oplus \
     libdrm.vendor
 
+TARGET_RECOVERY_DEVICE_MODULES += \
+	android.hardware.health@2.0-service
+
 RECOVERY_BINARY_SOURCE_FILES += \
+	$(TARGET_OUT_EXECUTABLES)/android.hardware.health@2.0-service \
     $(TARGET_OUT_VENDOR_EXECUTABLES)/hw/vendor.qti.hardware.vibrator.service.oplus
 
 RECOVERY_LIBRARY_SOURCE_FILES += \
@@ -96,8 +98,6 @@ RECOVERY_LIBRARY_SOURCE_FILES += \
 PRODUCT_COPY_FILES += \
     vendor/qcom/opensource/vibrator/excluded-input-devices.xml:$(TARGET_COPY_OUT_RECOVERY)/root/system/etc/excluded-input-devices.xml \
     vendor/qcom/opensource/vibrator/excluded-input-devices.xml:$(TARGET_COPY_OUT_RECOVERY)/root/vendor/etc/excluded-input-devices.xml
-
-PRODUCT_COPY_FILES += $(call find-copy-subdir-files,*,device/oneplus/sm8350-common/prebuilt/modules,$(TARGET_COPY_OUT_RECOVERY)/root/vendor/lib/modules/1.1)
 
 PRODUCT_COPY_FILES += \
     $(OUT_DIR)/target/product/lemonadep/system/etc/vintf/manifest.xml:$(TARGET_COPY_OUT_RECOVERY)/root/system/etc/vintf/manifest.xml \

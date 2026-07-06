@@ -61,6 +61,7 @@ on boot
     exec u:r:recovery:s0 -- /system/bin/variant-script.sh
     exec u:r:recovery:s0 -- /system/bin/set-timestamp.sh
     exec u:r:recovery:s0 -- /system/bin/fix-invalid-vintf-manifest.sh
+    exec u:r:recovery:s0 -- /system/bin/reload-vintf-services.sh
 
 on property:twrp.modules.loaded=true
     # Create a delay to prevent "deadlock," where services and libs are loaded from ROMs vendor partition,
@@ -82,4 +83,5 @@ on property:twrp.modules.loaded=true
     wait /sys/kernel/boot_adsp/boot 1
     write /sys/kernel/boot_adsp/boot 1
     wait /sys/class/power_supply/battery 1
+    start health-hal-2-0
     start health-hal-2-1
