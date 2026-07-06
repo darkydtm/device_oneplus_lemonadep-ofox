@@ -3,6 +3,6 @@
     "remote": "darkydtm",
     "repository": "device_oneplus_sm8350-common-ofox",
     "target_path": "device/oneplus/sm8350-common",
-    "revision": "feat/r12-android-15-16"
+    "revision": "fix/fastboot-boot-recovery"
   }
 ]
